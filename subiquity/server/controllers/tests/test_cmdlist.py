@@ -44,6 +44,7 @@ class TestCmdListController(IsolatedAsyncioTestCase):
 
     @mock.patch("shutil.which", return_value="/usr/bin/path/to/bin")
     async def test_no_snap_env_on_call(self, mocked_shutil):
+
         with self.mocked_arun as faked_process_call:
             with self.mocked_orig_environ as mocked_orig_environ:
                 with self.mocked_os_environ:

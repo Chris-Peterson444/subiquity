@@ -113,7 +113,7 @@ class BondConfig:
             "mode": self.mode,
         }
         if mode in BondParameters.supports_xmit_hash_policy:
-            params["transmit-hash-policy"] = self.xmit_hash_policy
+            params["xmit-hash-policy"] = self.xmit_hash_policy
         if mode in BondParameters.supports_lacp_rate:
             params["lacp-rate"] = self.lacp_rate
         return {

@@ -14,6 +14,7 @@ validate () {
 
     if [ -d $tmpdir/var/crash -a -n "$(ls -A $tmpdir/var/crash)" ] ; then
         echo "error: subiquity crashed"
+        cat $tmpdir/var/crash/*
         exit 1
     fi
 

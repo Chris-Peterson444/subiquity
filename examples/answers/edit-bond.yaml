@@ -15,7 +15,7 @@ Network:
         name: bond10
         devices:
           - [interface index 0]
-        mode: 802.3ad
+        mode: balance-xor
         # xmit_hash_policy: layer3+4
     - obj: [interface name bond10]
       action: EDIT_BOND

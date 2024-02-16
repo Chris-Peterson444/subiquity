@@ -21,6 +21,11 @@ Network:
       action: EDIT_BOND
     - obj: [interface name bond10]
       action: DELETE
+    - action: create-bond
+      data:
+        name: bond10
+        devices:
+          - [interface index 0]
     - action: done
 Proxy:
   proxy: ""

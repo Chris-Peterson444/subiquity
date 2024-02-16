@@ -17,10 +17,6 @@ Network:
           - [interface index 0]
         mode: balance-xor
         # xmit_hash_policy: layer3+4
-    - obj: [interface name bond10]
-      action: EDIT_BOND
-    - obj: [interface name bond10]
-      action: DELETE
     - action: create-bond
       data:
         name: bond10

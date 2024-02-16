@@ -23,6 +23,13 @@ Network:
       action: DELETE
     - action: create-bond
       data:
+        name: bond11
+        devices:
+        - [interface index 0]
+    - obj: [interface name bond11]
+      action: DELETE
+    - action: create-bond
+      data:
         name: bond10
         devices:
           - [interface index 0]

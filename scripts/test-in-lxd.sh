@@ -5,6 +5,7 @@ SCRIPT=$2
 TESTER=subiquity-${IMAGE##*:}
 
 lxd init --auto
+lxc --version
 
 if [ -z "$(lxc list -f csv -c n ^${TESTER}\$)" ]
 then

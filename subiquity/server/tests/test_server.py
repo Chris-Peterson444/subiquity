@@ -494,6 +494,18 @@ class TestAutoinstallValidation(SubiTestCase):
 
         self.assertEqual("top-level keys", ctx.exception.owner)
 
+    @parameterized.expand(
+        (
+            (""),
+            ("autoinstall:"),
+        )
+    )
+    async def test_read_config_empty_autoinstall(self, config):
+        """Test empty configs returns empty dict"""
+
+        path = self.create("autoinstall.yaml", config)
+        self.assertEqual(self.server._read_config(cfg_path=path), {})
+
 
 class TestMetaController(SubiTestCase):
     async def test_interactive_sections_not_present(self):

@@ -673,11 +673,19 @@ class SubiquityServer(Application):
         with open(cfg_path) as fp:
             config: dict[str, Any] = yaml.safe_load(fp)
 
+        # safe_load returns None for an empty string
+        if config is None:
+            return {}
+
         autoinstall_config: dict[str, Any]
 
         # Support "autoinstall" as a top-level key
         if "autoinstall" in config:
             autoinstall_config = config.pop("autoinstall")
+
+            # Autoinstall config could be {"autoinstall": None }
+            if autoinstall_config is None:
+                autoinstall_config = {}
 
             # but the only top level key
             if len(config) != 0:

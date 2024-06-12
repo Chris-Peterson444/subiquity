@@ -49,7 +49,9 @@ validate () {
         answers-core-desktop|answers-uc24)
             ;;
         *)
-            python3 scripts/validate-autoinstall-user-data.py -vvv --check-link < $tmpdir/var/log/installer/autoinstall-user-data
+            printf $testname
+            cat $tmpdir/var/log/installer/autoinstall-user-data
+            python3 scripts/validate-autoinstall-user-data.py -vvv -s $catalog --check-link < $tmpdir/var/log/installer/autoinstall-user-data
             # After the lunar release and the introduction of mirror testing, it
             # came to our attention that new Ubuntu installations have the security
             # repository configured with the primary mirror URL (i.e.,
@@ -146,6 +148,7 @@ for answers in examples/answers/*.yaml; do
 done
 
 testname=autoinstall-most-options
+catalog=examples/sources/install.yaml
 LANG=C.UTF-8 timeout --foreground 60 \
     python3 -m subiquity.cmd.tui \
     --dry-run \
@@ -155,7 +158,7 @@ LANG=C.UTF-8 timeout --foreground 60 \
     --autoinstall examples/autoinstall/most-options.yaml \
     --dry-run-config examples/dry-run-configs/apt-local-mirror.yaml \
     --kernel-cmdline autoinstall \
-    --source-catalog examples/sources/install.yaml
+    --source-catalog $catalog
 validate
 python3 scripts/check-yaml-fields.py $tmpdir/var/log/installer/curtin-install/subiquity-curtin-apt.conf \
         apt.disable_components='[non-free, restricted]' \
@@ -181,6 +184,7 @@ grep -q 'finish: subiquity/Install/install/postinstall/run_unattended_upgrades: 
 
 clean
 testname=autoinstall-simple
+catalog=examples/sources/install.yaml
 LANG=C.UTF-8 timeout --foreground 60 \
     python3 -m subiquity.cmd.tui \
     --dry-run \
@@ -188,7 +192,7 @@ LANG=C.UTF-8 timeout --foreground 60 \
     --machine-config examples/machines/simple.json \
     --autoinstall examples/autoinstall/user-data.yaml \
     --kernel-cmdline autoinstall \
-    --source-catalog examples/sources/install.yaml
+    --source-catalog $catalog
 validate
 python3 scripts/check-yaml-fields.py "$tmpdir"/var/log/installer/autoinstall-user-data \
         'autoinstall.source.id="ubuntu-server-minimal"'
@@ -196,6 +200,7 @@ grep -q 'finish: subiquity/Install/install/postinstall/run_unattended_upgrades: 
 
 clean
 testname=autoinstall-hybrid
+catalog=examples/sources/tpm.yaml
 LANG=C.UTF-8 timeout --foreground 60 \
     python3 -m subiquity.cmd.tui \
     --dry-run \
@@ -205,11 +210,12 @@ LANG=C.UTF-8 timeout --foreground 60 \
     --dry-run-config examples/dry-run-configs/tpm.yaml \
     --bootloader uefi \
     --kernel-cmdline autoinstall \
-    --source-catalog examples/sources/tpm.yaml
+    --source-catalog $catalog
 validate
 
 clean
 testname=autoinstall-reset-only
+catalog=examples/sources/install.yaml
 LANG=C.UTF-8 timeout --foreground 60 \
     python3 -m subiquity.cmd.tui \
     --dry-run \
@@ -217,11 +223,12 @@ LANG=C.UTF-8 timeout --foreground 60 \
     --machine-config examples/machines/simple.json \
     --autoinstall examples/autoinstall/reset-only.yaml \
     --kernel-cmdline autoinstall \
-    --source-catalog examples/sources/install.yaml
+    --source-catalog $catalog
 validate
 
 clean
 testname=autoinstall-fallback-offline
+catalog=examples/sources/install.yaml
 LANG=C.UTF-8 timeout --foreground 60 \
     python3 -m subiquity.cmd.tui \
     --dry-run \
@@ -229,7 +236,7 @@ LANG=C.UTF-8 timeout --foreground 60 \
     --machine-config examples/machines/simple.json \
     --autoinstall examples/autoinstall/fallback-offline.yaml \
     --kernel-cmdline autoinstall \
-    --source-catalog examples/sources/install.yaml
+    --source-catalog $catalog
 validate
 
 python3 -m subiquity.cmd.schema > $tmpdir/test-schema.json

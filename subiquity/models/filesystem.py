@@ -1972,6 +1972,7 @@ class FilesystemModel:
                     ],
                 },
             }
+
         config = {
             "storage": {
                 "version": self.storage_version,

@@ -1600,7 +1600,19 @@ class FilesystemController(SubiquityController, FilesystemManipulator):
         self.ensure_probing()
 
     def make_autoinstall(self):
-        if self.model.dd_target is None:
+        # Special render for reset-partition-only
+        if self.is_reset_partition_only():
+            return {
+                "storage": {
+                    "layout": {
+                        "name": "direct",
+                        "reset-partition": True,
+                        "reset-partition-only": True,
+                    },
+                },
+            }
+
+        elif self.model.dd_target is None:
             rendered = self.model.render()
             r = {"config": rendered["storage"]["config"]}
             if "swap" in rendered:

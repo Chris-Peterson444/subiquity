@@ -14,16 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-""" Entry-point to validate autoinstall-user-data against schema.
-By default, we are expecting the autoinstall user-data to be wrapped in a cloud
-config format:
+"""Validate autoinstall user data against the autoinstall schema. By default
+expects the user data is wrapped in a cloud-config. Example:
 
-#cloud-config
-autoinstall:
-  <user data comes here>
+    #cloud-config
+    autoinstall:
+        <user data here>
 
-To validate the user-data directly, you can pass the --no-expect-cloudconfig
-switch.
+To validate the user data directly, you can pass --no-expect-cloudconfig
 """
 
 import argparse
@@ -76,7 +74,7 @@ def parse_args() -> Namespace:
 
     parser = argparse.ArgumentParser(
         prog="validate-autoinstall-user-data",
-        description=description,
+        description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
@@ -104,6 +102,15 @@ def parse_args() -> Namespace:
         ),
         default=0,
     )
+    parser.add_argument(
+        "-s",
+        "--sources",
+        action="store",
+        type=str,
+        dest="source_catalog",
+        help=("Path to install sources catalog."),
+        default="examples/sources/all.yaml",
+    )
     # An option we use in CI to make sure Subiquity will insert a link to
     # the documentation in the auto-generated autoinstall file post-install
     parser.add_argument(
@@ -117,9 +124,10 @@ def parse_args() -> Namespace:
     return parser.parse_args()
 
 
-def make_app():
+def make_app(args: Namespace) -> SubiquityServer:
     parser = make_server_args_parser()
     opts, unknown = parser.parse_known_args(["--dry-run"])
+    opts.source_catalog = args.source_catalog
     app = SubiquityServer(opts, "")
     # This is needed because the ubuntu-pro server controller accesses dr_cfg
     # in the initializer.
@@ -156,17 +164,18 @@ def parse_cloud_config(data: str) -> dict[str, Any]:
         return cc_data["autoinstall"]
 
 
-async def verify_autoinstall(cfg_path: str, verbosity: int = 0) -> int:
+def verify_autoinstall(
+    app: SubiquityServer,
+    cfg_path: str,
+    verbosity: int = 0,
+) -> int:
     """Verify autoinstall configuration.
 
-    Returns 0 if succesfully validated.
+    Returns 0 if successfully validated.
     Returns 1 if fails to validate.
     """
 
-    # Make a dry-run server
-    app = make_app()
-
-    # Supress start and finish events unless verbosity >=2
+    # Suppress start and finish events unless verbosity >=2
     if verbosity < 2:
         for el in app.event_listeners:
             el.report_start_event = lambda x, y: None
@@ -201,7 +210,7 @@ async def verify_autoinstall(cfg_path: str, verbosity: int = 0) -> int:
     return 0
 
 
-def main() -> int:
+async def main() -> int:
     """Entry point."""
 
     args: Namespace = parse_args()
@@ -230,12 +239,15 @@ def main() -> int:
     else:
         ai_data = str_data
 
+    # Make a dry-run server
+    app = make_app(args)
+
     with tempfile.TemporaryDirectory() as td:
         path = Path(td) / "autoinstall.yaml"
         path.write_text(ai_data)
 
-        return asyncio.run(verify_autoinstall(path, verbosity=args.verbosity))
+        return verify_autoinstall(app, path, verbosity=args.verbosity)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(asyncio.run(main()))

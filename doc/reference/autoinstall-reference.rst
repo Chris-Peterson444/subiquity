@@ -1190,6 +1190,50 @@ Example:
       kernel:
         flavour: hwe
 
+.. _ai-kernel-crash-dumps:
+
+kernel-crash-dumps
+~~~~~~~~~~~~~~~~~~
+
+* **type:** mapping, see below
+* **default:** see below
+* **can be interactive:** no
+
+Toggle kernel crash dumps enablement.
+
+The default configuration will result in dynamic enablement of kernel crash dumps as described in the following document (doesn't exist yet).
+
+Default configuration:
+
+.. code-block:: yaml
+
+   autoinstall:
+      # Allow kernel crash dumps to be enabled dynamically.
+      kernel-crash-dumps:
+        enabled: null
+
+enabled
+^^^^^^^
+
+* **type:** boolean or null
+* **default:** ``null``
+
+Specify a boolean value to enable or disable kernel crash dumps. Set to ``null`` (default) to allow dynamic enablement.
+
+Examples:
+
+.. code-block:: yaml
+
+   autoinstall:
+      # Enable kernel crash dumps.
+      kernel-crash-dumps:
+        enabled: true
+
+   autoinstall:
+      # Disable kernel crash dumps.
+      kernel-crash-dumps:
+        enabled: false
+
 .. _ai-timezone:
 
 timezone

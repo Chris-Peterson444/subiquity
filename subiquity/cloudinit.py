@@ -5,7 +5,9 @@ import json
 import logging
 import re
 import secrets
+import tempfile
 from collections.abc import Awaitable, Sequence
+from pathlib import Path
 from string import ascii_letters, digits
 from subprocess import CalledProcessError, CompletedProcess
 from typing import Any, Optional
@@ -83,6 +85,10 @@ def supports_format_json() -> bool:
 
 def supports_recoverable_errors() -> bool:
     return cloud_init_version() >= "23.4"
+
+
+def supports_schema_subcommand() -> bool:
+    return cloud_init_version() >= "22.2"
 
 
 def read_json_extended_status(stream):
@@ -165,12 +171,75 @@ async def validate_cloud_init_top_level_keys() -> None:
     :raises CloudInitSchemaValidationError: If cloud-init schema did not validate
             successfully.
     """
+    if not supports_schema_subcommand():
+        log.debug(
+            "Host cloud-config doesn't support 'schema' subcommand. "
+            "Skipping top-level key cloud-config validation."
+        )
+        return None
+
     causes: list[str] = await get_unknown_keys()
 
     if causes:
         raise CloudInitSchemaTopLevelKeyError(keys=causes)
 
     return None
+
+
+async def validate_cloud_config_schema(data: dict[str, Any], data_source: str) -> None:
+    """Validate data config adheres to strict cloud-config schema
+
+    Log warnings on any deprecated cloud-config keys used.
+
+    :param data: dict of cloud-config
+    :param data_source: str to present in logs/errors describing
+        where this config came from: autoinstall.user-data or system info
+    :raises CalledProcessError: If cloud-config did not validate successfully.
+    """
+
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "test-cloud-config.yaml"
+        path.write_text(yaml.dump(data))
+        await legacy_cloud_init_validation(path, data_source)
+
+
+async def legacy_cloud_init_validation(config_path: str, data_source: str) -> None:
+    """Validate cloud-config using helper script.
+
+    :param config_path: path to cloud-config to validate
+    :param data_source: str to present in logs/errors describing
+        where this config came from: autoinstall.user-data or system info
+    :raises CloudInitSchemaValidationError: If cloud-config did not validate
+            successfully.
+    """
+
+    try:
+        proc: CompletedProcess = await arun_command(
+            [
+                "subiquity-legacy-cloud-init-validate",
+                "--config",
+                config_path,
+                "--source",
+                data_source,
+            ],
+            env=system_scripts_env(),
+            check=True,
+        )
+    except CalledProcessError as cpe:
+        log_process_streams(
+            logging.DEBUG,
+            cpe,
+            "subiquity-legacy-cloud-init-validation",
+        )
+        raise cpe
+
+    results: dict[str, str] = yaml.safe_load(proc.stdout)
+
+    if warnings := results.get("warnings"):
+        log.warning(warnings)
+
+    if errors := results.get("errors"):
+        raise CloudInitSchemaValidationError(errors)
 
 
 async def legacy_cloud_init_extract() -> tuple[dict[str, Any], str]:

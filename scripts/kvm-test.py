@@ -42,9 +42,9 @@ iso:
     default: edge
 profiles:
     server:
-        memory: 2G
-        disk-size: 12G
-        extra-qemu-options: []
+        memory: 8G
+        disk-size: 20G
+        extra-qemu-options: [-smp, "4"]
     desktop:
         memory: 8G
         disk-size: 20G
@@ -513,10 +513,13 @@ def memory(ctx):
 @contextlib.contextmanager
 def kvm_prepare_common(ctx):
     '''Spawn needed background processes and return the CLI options for QEMU'''
-    ret = ['kvm', '-no-reboot']
-    ret.extend(('-vga', 'virtio'))
+    ret = ['qemu-system-arm64', '-machine', 'virt-8.0', '-no-reboot']
+    # ret.extend(('-vga', 'virtio'))
+    ret.extend(('-device', 'VGA'))
+    ret.extend(('-cpu', 'cortex-a57'))
+    ret.extend(('-bios', '/usr/share/qemu-efi-aarch64/QEMU_EFI.fd'))
     ret.extend(memory(ctx))
-    ret.extend(bios(ctx))
+    # ret.extend(bios(ctx))
     ret.extend(nets(ctx))
     if ctx.args.sound:
         ret.extend(('-device', 'AC97', '-device', 'usb-ehci'))

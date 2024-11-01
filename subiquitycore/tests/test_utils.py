@@ -19,6 +19,7 @@ from unittest.mock import patch
 
 from subiquitycore.tests import SubiTestCase
 from subiquitycore.utils import (
+    _generate_salt,
     _zsys_uuid_charset,
     gen_zsys_uuid,
     orig_environ,
@@ -129,3 +130,13 @@ class TestZsysUUID(SubiTestCase):
         for i in range(10):
             uuid = gen_zsys_uuid()
             self.assertEqual(6, len(uuid), uuid)
+
+
+class TestCryptPassword(SubiTestCase):
+    def test_generate_salt(self):
+        """Assert prefixes for each algorithm are correct."""
+
+        self.assertEqual(_generate_salt("SHA-512")[0], "$6$")
+        self.assertEqual(_generate_salt("SHA-256")[0], "$5$")
+        self.assertEqual(_generate_salt("MD5")[0], "$1$")
+        self.assertEqual(_generate_salt("DES")[0], "")

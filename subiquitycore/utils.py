@@ -234,8 +234,7 @@ def log_process_streams(
     log.log(level, "--------------------------------------------------")
 
 
-# FIXME: replace with passlib and update package deps
-def crypt_password(passwd, algo="SHA-512"):
+def _generate_salt(algo: str) -> (str, str):
     # encryption algo - id pairs for crypt()
     algos = {"SHA-512": "$6$", "SHA-256": "$5$", "MD5": "$1$", "DES": ""}
     if algo not in algos:
@@ -248,7 +247,14 @@ def crypt_password(passwd, algo="SHA-512"):
     salt_set = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./"
     salt = 16 * " "
     salt = "".join([random.choice(salt_set) for c in salt])
-    return crypt.crypt(passwd, algos[algo] + salt)
+
+    return algos[algo], salt
+
+
+# FIXME: replace with passlib and update package deps
+def crypt_password(passwd, algo="SHA-512"):
+    prefix, salt = _generate_salt(algo)
+    return crypt.crypt(passwd, prefix + salt)
 
 
 def disable_subiquity():

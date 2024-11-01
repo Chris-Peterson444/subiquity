@@ -13,7 +13,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import asyncio
-import crypt
 import logging
 import os
 import random
@@ -22,6 +21,16 @@ import tempfile
 from typing import Any, Dict, List, Sequence
 
 log = logging.getLogger("subiquitycore.utils")
+
+# The crypt module was removed in python3.13. This doesn't really matter
+# until we move to core26, except for breaking dryrun testing. Let's allow
+# the import to fail for now and we can remove this block once we have a
+# suitable replacement.
+# TODO: Drop crypt module usage
+try:
+    import crypt
+except ModuleNotFoundError:
+    pass
 
 
 def _clean_env(env, *, locale=True):
@@ -255,6 +264,37 @@ def _generate_salt(algo: str) -> (str, str):
 def crypt_password(passwd, algo="SHA-512"):
     prefix, salt = _generate_salt(algo)
     return crypt.crypt(passwd, prefix + salt)
+
+
+def dryrun_crypt_password(passwd: str, algo: str = "SHA-512"):
+    """A crypt-replacement wrapper.
+
+    The following function is a replacement to support dry-run testing on
+    python3.13+, where the module was finally removed. We don't check if we
+    are in dry-run mode here but we do from the caller site and we gracefully
+    fail on import towards the top of this module. crypt` will be available
+    inside the snap until we move to core26, but this dryrun specific code
+    should be ripped out once write something for core26+.
+
+    We particularly don't want this as the final solution since the raw user
+    password will be printed in the logs by `run_command`.
+    """
+    prefix, salt = _generate_salt(algo)
+
+    prefix = prefix.replace("$", r"\$")
+    proc = run_command(
+        [
+            "perl",
+            "-e",
+            rf'print crypt "{passwd}", "{prefix}{salt}"',
+        ]
+    )
+
+    if proc.returncode != 0:
+        raise subprocess.CalledProcessError("perl crypt hash generation failed")
+
+    log.debug(f"crypt output={proc.stdout}")
+    return proc.stdout
 
 
 def disable_subiquity():

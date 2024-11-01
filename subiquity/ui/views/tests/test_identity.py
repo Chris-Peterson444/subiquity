@@ -20,6 +20,7 @@ from subiquity.client.controllers.identity import IdentityController
 from subiquity.common.types import IdentityData, UsernameValidation
 from subiquity.ui.views.identity import IdentityView
 from subiquitycore.testing import view_helpers
+from subiquitycore.tests.parameterized import parameterized
 
 valid_data = {
     "realname": "Real Name",
@@ -107,7 +108,9 @@ class IdentityViewTests(unittest.IsolatedAsyncioTestCase):
     def test_click_done(self):
         view = self.make_view()
         CRYPTED = "<crypted>"
-        with mock.patch("subiquity.ui.views.identity.crypt_password") as cp:
+        with mock.patch(
+            "subiquity.ui.views.identity.IdentityView._crypt_password"
+        ) as cp:
             cp.side_effect = lambda p: CRYPTED
             view_helpers.enter_data(view.form, valid_data)
             done_btn = view_helpers.find_button_matching(view, "^Done$")
@@ -119,6 +122,26 @@ class IdentityViewTests(unittest.IsolatedAsyncioTestCase):
             crypted_password=CRYPTED,
         )
         view.controller.done.assert_called_once_with(expected)
+
+    @parameterized.expand(((True,), (False,)))
+    def test_use_dryrun_crypt(self, is_dryrun):
+        view = self.make_view()
+        view.controller.opts = mock.Mock(dry_run=is_dryrun)
+
+        with (
+            mock.patch("subiquity.ui.views.identity.crypt_password") as mock_crypt,
+            mock.patch(
+                "subiquity.ui.views.identity.dryrun_crypt_password"
+            ) as mock_dryrun_crypt,
+        ):
+            view._crypt_password("mock password")
+
+        if is_dryrun:
+            mock_crypt.assert_not_called()
+            mock_dryrun_crypt.assert_called_once()
+        else:
+            mock_crypt.assert_called_once()
+            mock_dryrun_crypt.assert_not_called()
 
     async def test_can_tab_to_done_when_valid(self):
         # NOTE: this test needs a running event loop because the username field

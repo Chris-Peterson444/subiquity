@@ -21,6 +21,8 @@ from subiquitycore.tests import SubiTestCase
 from subiquitycore.utils import (
     _generate_salt,
     _zsys_uuid_charset,
+    crypt_password,
+    dryrun_crypt_password,
     gen_zsys_uuid,
     orig_environ,
     system_scripts_env,
@@ -140,3 +142,35 @@ class TestCryptPassword(SubiTestCase):
         self.assertEqual(_generate_salt("SHA-256")[0], "$5$")
         self.assertEqual(_generate_salt("MD5")[0], "$1$")
         self.assertEqual(_generate_salt("DES")[0], "")
+
+    @patch("subiquitycore.utils._generate_salt")
+    def test_compare_python_perl(self, salt_mock):
+        """Test perl invocation is equivalent with python crypt module.
+
+        It is expected that this test will fail once we move to python3.13
+        and can be removed at that time.
+        """
+
+        # Test SHA-512
+        salt_mock.return_value = ("$6$", "mock.salt")
+        python = crypt_password("ubuntu", "SHA-512")
+        perl = dryrun_crypt_password("ubuntu", "SHA-512")
+        self.assertEqual(python, perl)
+
+        # Test SHA-256
+        salt_mock.return_value = ("$5", "mock.salt")
+        python = crypt_password("ubuntu", "SHA-256")
+        perl = dryrun_crypt_password("ubuntu", "SHA-256")
+        self.assertEqual(python, perl)
+
+        # Test MD5
+        salt_mock.return_value = ("$1", "mock.salt")
+        python = crypt_password("ubuntu", "MD5")
+        perl = dryrun_crypt_password("ubuntu", "MD5")
+        self.assertEqual(python, perl)
+
+        # Test DES
+        salt_mock.return_value = ("", "mock.salt")
+        python = crypt_password("ubuntu", "DES")
+        perl = dryrun_crypt_password("ubuntu", "DES")
+        self.assertEqual(python, perl)

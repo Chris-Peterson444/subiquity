@@ -25,7 +25,7 @@ from subiquitycore.async_helpers import schedule_task
 from subiquitycore.ui.form import Form, WantsToKnowFormField, simple_field
 from subiquitycore.ui.interactive import PasswordEditor, StringEditor
 from subiquitycore.ui.utils import screen
-from subiquitycore.utils import crypt_password
+from subiquitycore.utils import crypt_password, dryrun_crypt_password
 from subiquitycore.view import BaseView
 
 log = logging.getLogger("subiquity.ui.views.identity")
@@ -218,12 +218,26 @@ class IdentityView(BaseView):
             )
         )
 
+    def _crypt_password(self, passwd: str) -> str:
+        """Get password hash using crypt.
+
+        Utility function to determine if running in dryrun mode or not
+        and then to run the correct crypt_password implementation. The python
+        crypt module was deprecated in python3.13 and this wrapper can
+        be removed once we can unify our implementation to something else.
+        """
+
+        if self.controller.opts.dry_run:
+            return dryrun_crypt_password(passwd)
+        else:
+            return crypt_password(passwd)
+
     def done(self, result):
         self.controller.done(
             IdentityData(
                 hostname=self.form.hostname.value,
                 realname=self.form.realname.value,
                 username=self.form.username.value,
-                crypted_password=crypt_password(self.form.password.value),
+                crypted_password=self._crypt_password(self.form.password.value),
             )
         )

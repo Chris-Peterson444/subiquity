@@ -137,6 +137,9 @@ class API:
             def GET() -> Optional[List[str]]:
                 ...
 
+        class models:
+            def GET() -> dict[str, List[str]]: ...
+
     class errors:
         class wait:
             def GET(error_ref: ErrorReportRef) -> ErrorReportRef:

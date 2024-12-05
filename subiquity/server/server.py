@@ -123,6 +123,14 @@ class MetaController:
     async def client_variant_GET(self) -> str:
         return self.app.variant
 
+    async def models_GET(self) -> dict[str, List[str]]:
+        ret = {
+            "install": self.app.base_model._cur_install_model_names,
+            "postinstall": self.app.base_model._cur_postinstall_model_names,
+        }
+
+        return ret
+
     async def ssh_info_GET(self) -> Optional[LiveSessionSSHInfo]:
         ips: List[str] = []
         if self.app.base_model.network:

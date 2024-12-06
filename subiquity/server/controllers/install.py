@@ -611,6 +611,8 @@ class InstallController(SubiquityController):
 
             self.app.update_state(ApplicationState.RUNNING)
 
+            self.model.target = None
+
             if self.model.target is None:
                 for_install_path = None
             elif self.supports_apt():

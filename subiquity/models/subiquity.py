@@ -222,13 +222,20 @@ class SubiquityModel:
             )
 
     def set_source_variant(self, variant):
+        log.debug(f"setting new variant: {variant}")
         self._cur_install_model_names = self._install_model_names.for_variant(variant)
         self._cur_postinstall_model_names = self._postinstall_model_names.for_variant(
             variant
         )
+        log.debug(f"new {self._cur_install_model_names=}")
+        log.debug(f"new {self._cur_postinstall_model_names=}")
+
         unconfigured_install_model_names = (
             self._cur_install_model_names - self._configured_names
         )
+
+        log.debug(f"remaining install models {unconfigured_install_model_names}")
+
         if unconfigured_install_model_names:
             if self._install_event.is_set():
                 self._install_event = asyncio.Event()
@@ -236,8 +243,12 @@ class SubiquityModel:
                 self._confirmation_task.cancel()
         else:
             self._install_event.set()
+
         unconfigured_postinstall_model_names = (
             self._cur_postinstall_model_names - self._configured_names
+        )
+        log.debug(
+            f"remaining post install models {unconfigured_postinstall_model_names}"
         )
         if unconfigured_postinstall_model_names:
             if self._postinstall_event.is_set():

@@ -127,6 +127,7 @@ class MetaController:
         ret = {
             "install": self.app.base_model._cur_install_model_names,
             "postinstall": self.app.base_model._cur_postinstall_model_names,
+            "configured": self.app.base_model._configured_names,
         }
 
         return ret
@@ -205,30 +206,54 @@ def get_installer_password_from_cloudinit_log():
 
 INSTALL_MODEL_NAMES = ModelNames(
     {
-        "debconf_selections",
-        "filesystem",
-        "kernel",
-        "kernel_crash_dumps",
+        # "debconf_selections",
+        # "filesystem",
+        # "kernel",
+        # "kernel_crash_dumps",
         "keyboard",
         "source",
     },
-    desktop={"network"},
-    server={"mirror", "network", "proxy"},
+    test=set(),
+    desktop={"network", "kernel", "keyboard", "source"},
+    server={"mirror", "network", "proxy", "kernel", "keyboard", "source"},
 )
+# INSTALL_MODEL_NAMES = ModelNames(
+#     {
+#         "debconf_selections",
+#         "filesystem",
+#         "kernel",
+#         "kernel_crash_dumps",
+#         "keyboard",
+#         "source",
+#     },
+#     core=set(),
+#     desktop={"network", "kernel", "keyboard", "source"},
+#     server={"mirror", "network", "proxy", "kernel", "keyboard", "source"},
+# )
 
 POSTINSTALL_MODEL_NAMES = ModelNames(
     {
-        "drivers",
-        "identity",
         "locale",
         "packages",
-        "snaplist",
-        "ssh",
-        "ubuntu_pro",
         "userdata",
     },
-    desktop={"timezone", "codecs", "active_directory", "network"},
-    server={"network"},
+    test=set(),
+    desktop={
+        "timezone",
+        "codecs",
+        "active_directory",
+        "network",
+        "drivers",
+        "identity",
+    },
+    server={
+        "network",
+        "drivers",
+        "identity",
+        "snaplist",
+        "ubuntu_pro",
+        "ssh",
+    },
 )
 
 
@@ -291,7 +316,7 @@ class SubiquityServer(Application):
         "Shutdown",
     ]
 
-    supported_variants = ["server", "desktop"]
+    supported_variants = ["server", "desktop", "test"]
 
     def make_model(self):
         root = "/"
@@ -308,7 +333,7 @@ class SubiquityServer(Application):
     def __init__(self, opts, block_log_dir):
         super().__init__(opts)
         self.dr_cfg: Optional[DRConfig] = None
-        self.set_source_variant(self.supported_variants[0])
+        self.set_source_variant(self.supported_variants[-1])
         self.block_log_dir = block_log_dir
         self.cloud_init_ok = None
         self.state_event = asyncio.Event()
@@ -803,7 +828,8 @@ class SubiquityServer(Application):
             bad_keys: list[str] = exc.keys
             raw_keys: list[str] = [f"{key!r}" for key in bad_keys]
             context.warning(
-                f"cloud-init schema validation failure for: {', '.join(raw_keys)}",
+                f"cloud-init schema validation failure for: {
+                    ', '.join(raw_keys)}",
                 log=log,
             )
 
@@ -924,7 +950,10 @@ class SubiquityServer(Application):
         if self.opts.autoinstall is not None and not os.path.exists(
             self.opts.autoinstall
         ):
-            raise Exception(f"Autoinstall argument {self.opts.autoinstall} not found")
+            raise Exception(
+                f"Autoinstall argument {
+                            self.opts.autoinstall} not found"
+            )
 
         kernel_install_path = self.kernel_cmdline.get("subiquity.autoinstallpath", None)
 

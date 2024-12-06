@@ -14,6 +14,9 @@
 
 import asyncio
 import inspect
+import logging
+
+log = logging.getLogger("subiquitycore.pubsub")
 
 
 class CoreChannels:
@@ -28,6 +31,7 @@ class MessageHub:
         self.subscriptions.setdefault(channel, []).append(method)
 
     async def abroadcast(self, channel, *args, **kwargs):
+        log.debug(f"broadcasting {channel=}")
         for m in self.subscriptions.get(channel, []):
             v = m(*args, **kwargs)
             if inspect.iscoroutine(v):

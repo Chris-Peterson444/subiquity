@@ -115,7 +115,38 @@ class SubiquityClient(TuiApplication):
         "Progress",
     ]
 
-    variant_to_controllers: Dict[str, List[str]] = {}
+    variant_to_controllers: Dict[str, List[str]] = {
+        "server": [
+            "Serial",
+            "Welcome",
+            "Refresh",
+            "Keyboard",
+            "Source",
+            "Zdev",
+            "Network",
+            "Proxy",
+            "Mirror",
+            "Refresh",
+            "Filesystem",
+            "Identity",
+            "UbuntuPro",
+            "SSH",
+            "Drivers",
+            "SnapList",
+            "Progress",
+        ],
+        "core": [
+            "Serial",
+            "Welcome",
+            "Refresh",
+            "Keyboard",
+            "Network",
+            "Refresh",
+            "Source",
+            "Filesystem",
+            "Progress",
+        ],
+    }
 
     def __init__(self, opts, about_msg=None):
         if is_linux_tty():

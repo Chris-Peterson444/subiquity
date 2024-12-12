@@ -82,5 +82,5 @@ class TestUserdataController(unittest.TestCase):
         self.assertEqual({}, self.controller.model)
 
     def test_load_some(self):
-        self.controller.load_autoinstall_data({"stuff": "things"})
-        self.assertEqual({"stuff": "things"}, self.controller.model)
+        self.controller.load_autoinstall_data({"users": []})
+        self.assertEqual({"users": []}, self.controller.model)

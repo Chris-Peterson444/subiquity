@@ -23,6 +23,15 @@ class MockedApplication:
     autoinstall_config = {}
     answers = {}
     opts = None
+    variant = "server"
+    base_model = mock.Mock()
+
+    def set_source_variant(self, variant) -> None:
+        self.variant = variant
+        if not isinstance(self.base_model, mock.Mock):
+            self.base_model.set_source_variant(variant)
+        else:
+            self.base_model.source.current.variant = variant
 
     def make_autoinstall(self):
         return {"mock_key": "mock_data"}
@@ -33,8 +42,6 @@ def make_app(model=None):
     app.ui = mock.Mock()
     if model is not None:
         app.base_model = model
-    else:
-        app.base_model = mock.Mock()
     app.add_event_listener = mock.Mock()
     app.controllers = mock.Mock()
     app.context = Context.new(app)

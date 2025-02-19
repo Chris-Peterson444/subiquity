@@ -7,4 +7,4 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check if CLA signed
-        uses: canonical/has-signed-canonical-cla@d8942819445fb93015c6f298e1636a23f6f47064
+        uses: canonical/has-signed-canonical-cla@v2

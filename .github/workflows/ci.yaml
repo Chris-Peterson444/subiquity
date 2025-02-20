@@ -20,7 +20,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: run
-      run: sudo ./scripts/test-in-lxd.sh ${{ matrix.image }} "make check"
+      run: |
+        sudo ./scripts/setup-github-ci.sh
+        sudo ./scripts/test-in-lxd.sh ${{ matrix.image }} "make check"
 
   lint:
     runs-on: ubuntu-24.04

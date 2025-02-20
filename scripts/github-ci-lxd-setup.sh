@@ -1,12 +1,13 @@
 #!/bin/bash
 set -eux
 
-# The purpose of this file is to separate out some of the github ci specific 
-# setup actions we need to perform before running the tests setup itself. Specifically
-# this file is called before `test-in-lxd.sh` during the ci action, but that 
-# particular .
-#
+# The purpose of this script is to separate out the actions needed to setup
+# LXD on the GitHub Actions CI runners from the actual test setup and 
+# execution. This way, test scripts can be mostly run locally without making
+# too many changes to the local system.
 
+# The runner images don't have lxd enabled by default.
+lxd init --auto
 
 # If the runner image uses docker, then work around a known connectivity issue
 # when using lxd and docker at the same time.

@@ -43,7 +43,7 @@ content="
     "
 
 attempts_launch=0
-while not lxc exec $TESTER -- sh -ec "$content"; do
+while ! lxc exec $TESTER -- sh -ec "$content"; do
     sleep 1
     attempts_launch=$((attempts_launch+1))
     if [ $attempts_launch -gt 100 ]; then

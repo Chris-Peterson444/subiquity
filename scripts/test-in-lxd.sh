@@ -23,10 +23,10 @@ TESTER=subiquity-${IMAGE##*:}
 if [ -z "$(lxc list -f csv -c n ^${TESTER}\$)" ]
 then
     # using security.nesting=true for LP: #2046486
-    lxc launch $IMAGE $TESTER -c security.nesting=true
+    lxc launch $IMAGE $TESTER -c security.nesting=true --vm
     lxc config device add $TESTER code disk source=`pwd` path=/subiquity
 else
-    lxc start $TESTER
+    lxc start $TESTER --vm
 fi
 # copy is allowed to fail, in case the subiquity directory being tested
 # includes some uncopyable stuff

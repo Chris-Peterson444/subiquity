@@ -23,7 +23,8 @@ TESTER=subiquity-${IMAGE##*:}
 if [ -z "$(lxc list -f csv -c n ^${TESTER}\$)" ]
 then
     # using security.nesting=true for LP: #2046486
-    lxc launch $IMAGE $TESTER -c security.nesting=true --vm
+    # lxc launch $IMAGE $TESTER -c security.nesting=true --vm
+    lxc launch $IMAGE $TESTER --vm
     lxc config device add $TESTER code disk source=`pwd` path=/subiquity
 else
     lxc start $TESTER --vm

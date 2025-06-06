@@ -31,11 +31,26 @@ else
 fi
 # copy is allowed to fail, in case the subiquity directory being tested
 # includes some uncopyable stuff
-lxc exec $TESTER -- sh -ec "
+# lxc exec $TESTER -- sh -ec "
+#     cd ~
+#     sudo cp -a /subiquity . || true
+#     [ -d ~/subiquity ]
+#     "
+content="
     cd ~
     sudo cp -a /subiquity . || true
     [ -d ~/subiquity ]
     "
+
+attempts_launch=0
+while not lxc exec $TESTER -- sh -ec "$content"; do
+    sleep 1
+    attempts_launch=$((attempts_launch+1))
+    if [ $attempts_launch -gt 100 ]; then
+        echo "failed to launch"
+        exit 1
+    fi
+done
 
 attempts=0
 while ! lxc file pull $TESTER/etc/resolv.conf - 2> /dev/null | grep -q ^nameserver; do

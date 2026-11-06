@@ -1,6 +1,7 @@
 name: VM Tests
 
 on:
+  push:
   pull_request:
     paths-ignore:
       - 'doc/**'

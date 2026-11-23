@@ -1,0 +1,35 @@
+name: vmtest-diagnostics
+description: >-
+  Dump VM test diagnostics and upload the collected installer logs as
+  an artifact.  Call with "if: failure()" from the job.
+
+# Everything here is best effort by design: runs precisely when things
+# are broken, possibly including libvirtd itself - no command may fail
+# the step or abort the evidence run.
+
+runs:
+  using: composite
+  steps:
+    - name: dump diagnostics
+      shell: bash
+      run: |
+        echo '== virsh list --all =='
+        sudo virsh list --all || true
+        echo '== running domains =='
+        for d in $(sudo virsh list --name); do
+          echo "-- $d --"
+          sudo virsh dominfo "$d" || true
+          sudo virsh domifaddr "$d" || true
+        done
+        echo '== collected logs =='
+        sudo find /tmp -maxdepth 2 -name 'subiquity-vmtest-*' -ls || true
+
+    - name: upload installer logs
+      # Runs only when the caller job failed, but the log collection
+      # itself can fail too (e.g. the SUT never got an IP), so tolerate
+      # having nothing to upload rather than fail the evidence run.
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+      with:
+        name: installer-logs
+        path: /tmp/subiquity-vmtest-*/*.tgz
+        if-no-files-found: ignore

@@ -1,0 +1,108 @@
+name: vmtest-prepare
+description: >-
+  Prepare a runner for VM tests: install dependencies, configure
+  libvirt, verify KVM, download the daily server ISO and the built
+  subiquity snap artifact, and build the test ISO with that snap
+  injected.
+
+# The daily ISO under test and the built snap arrive as inputs (see
+# below).  The remaining constant, ISO_DIR, is where the test ISO is
+# written so qemu can read it under the stock AppArmor profile.
+
+inputs:
+  iso-name:
+    description: filename of the daily server ISO to test
+    required: true
+  iso-url:
+    description: base URL of the daily server ISO to test
+    required: true
+  iso-dir:
+    description: directory to build the test ISO in (needs to be readable by qemu, e.g. via the libvirt AppArmor profile)
+    default: /var/lib/libvirt/images
+  snap-artifact-id:
+    description: id of the built subiquity snap artifact to download
+    required: true
+
+outputs:
+  test-iso:
+    description: path of the test ISO built from the daily ISO and the snap
+    value: ${{ steps.test-iso.outputs.test-iso }}
+
+runs:
+  using: composite
+  steps:
+    # Fast path failure.
+    - name: ensure /dev/kvm exists
+      shell: bash
+      run: |
+        if [ ! -e /dev/kvm ]; then
+          echo "no /dev/kvm on this runner - vmtest requires nested virtualization" >&2
+          exit 1
+        fi
+        ls -l /dev/kvm
+
+    - name: install vmtest dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          python3-pytest openssh-client \
+          virtinst libvirt-daemon-system \
+          cloud-init python3-attr \
+          fuseiso squashfs-tools lz4 python3-debian gpg \
+          wget git
+
+    - name: configure libvirt
+      shell: bash
+      run: |
+        sudo systemctl enable --now libvirtd
+        # Ensure the default NAT network (needed for domifaddr/DHCP) is
+        # started.
+        sudo virsh net-start default || true # Errors when network is already active.
+        sudo virsh net-autostart default
+
+    - name: check virt capabilities
+      shell: bash
+      run: |
+        sudo virsh net-list --all
+        sudo virt-host-validate qemu
+
+    - name: download built snap
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+      with:
+        artifact-ids: ${{ inputs.snap-artifact-id }}
+
+    - name: download daily ISO
+      shell: bash
+      env:
+        ISO_NAME: ${{ inputs.iso-name }}
+        ISO_URL: ${{ inputs.iso-url }}
+      run: |
+        cd "$RUNNER_TEMP"
+        wget -nv -O "$ISO_NAME" "$ISO_URL/$ISO_NAME"
+        wget -nv -O SHA256SUMS "$ISO_URL/SHA256SUMS"
+        sha256sum -c SHA256SUMS --ignore-missing
+
+    - name: build test ISO using newly built snap
+      shell: bash
+      env:
+        ISO_NAME: ${{ inputs.iso-name }}
+        ISO_DIR: ${{ inputs.iso-dir }}
+      run: |
+        set -x
+        sudo ./scripts/inject-subiquity-snap.sh \
+          "$RUNNER_TEMP/$ISO_NAME" \
+          subiquity*.snap \
+          "$ISO_DIR/${ISO_NAME%.iso}-test.iso"
+        ls -lh "$ISO_DIR/${ISO_NAME%.iso}-test.iso"
+
+    # Publish the built ISO's path so callers don't have to reconstruct
+    # (and stay in sync with) this action's naming convention.
+    - name: expose test ISO path
+      id: test-iso
+      shell: bash
+      env:
+        ISO_NAME: ${{ inputs.iso-name }}
+        ISO_DIR: ${{ inputs.iso-dir }}
+      run: |
+        echo "test-iso=$ISO_DIR/${ISO_NAME%.iso}-test.iso" >> "$GITHUB_OUTPUT"

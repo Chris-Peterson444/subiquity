@@ -1,0 +1,37 @@
+name: vmtest-cleanup
+description: >-
+  Clean up after VM tests: remove the staged ISOs and any leftover VM
+  state.  Call with "if: always()" from the job.
+
+inputs:
+  iso-name:
+    description: filename of the daily server ISO that was tested
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: cleanup
+      shell: bash
+      # Best effort per domain (one stuck domain must not abort the
+      # rest); the rm is deliberately strict - a failure there means
+      # litter left on the runner.
+      env:
+        ISO_NAME: ${{ inputs.iso-name }}
+        ISO_DIR: /var/lib/libvirt/images
+      run: |
+        sudo rm -f -- \
+          "$RUNNER_TEMP/$ISO_NAME" \
+          "$RUNNER_TEMP/SHA256SUMS" \
+          "$ISO_DIR/${ISO_NAME%.iso}-test.iso"
+
+        for d in $(sudo virsh list --all --name); do
+          case "$d" in
+            subiquity-vmtest-*)
+              sudo virsh destroy "$d" || true
+              # --storage vda only: --remove-all-storage would also
+              # remove pool-backed cdrom sources (see conftest)
+              sudo virsh undefine "$d" --storage vda || true
+              ;;
+          esac
+        done
